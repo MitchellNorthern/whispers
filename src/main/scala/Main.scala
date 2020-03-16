@@ -1,6 +1,4 @@
-import printer.Printer
-
-import scala.io.StdIn
+import game.GameBoard
 
 /**
  * The entry point into the Whispers application.
@@ -9,6 +7,8 @@ import scala.io.StdIn
  */
 object Main {
     def main(args: Array[String]): Unit = {
-
+        val game: GameBoard = new GameBoard
+        game.initBoard(30, 16, 99)
+        game.printBoard(30, 16, true)
     }
 }
