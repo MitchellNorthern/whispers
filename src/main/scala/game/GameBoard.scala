@@ -8,9 +8,15 @@ import scala.util.Random
 class GameBoard {
 
     var board: mutable.HashMap[Point, GameTile] = new mutable.HashMap[Point, GameTile]()
+    var lost: Boolean = false
+    var w: Integer = 30
+    var h: Integer = 16
 
     def initBoard(width: Integer, height: Integer, numOfMines: Integer): Unit = {
         val generator = new Random(System.currentTimeMillis())
+
+        this.w = width
+        this.h = height
 
         var mines = numOfMines
         while (mines > 0) {
@@ -18,11 +24,11 @@ class GameBoard {
             val y = generator.nextInt(height)
             if (canPlaceMine(x, y)) {
                 mines -= 1
-                this.board += (new Point(x, y) -> new GameTile(tileType = 'M'))
+                this.board += (new Point(x, y) -> new GameTile(tileType = 'M', x = x, y = y))
             }
         }
-        for (i <- 0 to width) {
-            for (j <- 0 to height) {
+        for (i <- 0 to this.w) {
+            for (j <- 0 to this.h) {
                 val currentTile = this.board.get(new Point(i, j)).getOrElse(null)
                 if (currentTile == null) {
                     val surroundingMines = getMineCount(i, j)
@@ -30,7 +36,7 @@ class GameBoard {
                     if (surroundingMines > 0) {
                         tile = (surroundingMines.toString).charAt(0)
                     }
-                    this.board += (new Point(i, j) -> new GameTile(tileType = tile))
+                    this.board += (new Point(i, j) -> new GameTile(tileType = tile, x = i, y = j))
                 }
             }
         }
@@ -65,32 +71,57 @@ class GameBoard {
     }
 
     def handleChoice(x: Integer, y: Integer): Unit = {
-
+        val selectedTile = this.board.get(new Point(x, y)).get
+        if (selectedTile.tileType == 'M') {
+            this.lost = true
+            revealAllMines()
+        } else {
+            cascadeClick(selectedTile, x, y)
+        }
     }
 
-    def cascadeClick(x: Integer, y: Integer): Unit = {
-
+    def cascadeClick(tile: GameTile, x: Integer, y: Integer): Unit = {
+        println(tile)
+        if (tile.tileType == ' ' && tile.display != ' ') {
+            tile.revealTile()
+            val surroundingTiles: List[GameTile] = getSurroundingTiles(x, y)
+            surroundingTiles.map(surroundingTile => {
+                if (tile != null) {
+                    cascadeClick(surroundingTile, surroundingTile.x, surroundingTile.y)
+                }
+            })
+        } else if (tile.tileType != 'M') {
+            tile.revealTile()
+        }
     }
 
-    def printBoard(width: Integer, height: Integer, revealed: Boolean): Unit = {
-        for (num <- 0 to (width + 2)) {
+    def revealAllMines(): Unit = {
+        for (h <- (this.h - 1) to 0 by -1) {
+            for (w <- 0 to this.w) {
+                val currentTile = this.board.get(new Point(w, h)).get
+                if (currentTile.tileType == 'M') {
+                    currentTile.revealTile
+                }
+            }
+        }
+        printBoard()
+    }
+
+    def printBoard(): Unit = {
+        for (num <- 0 to (this.w + 2)) {
             print("+")
         }
-        for (h <- (height - 1) to 0 by -1) {
+        for (h <- (this.h - 1) to 0 by -1) {
             println()
             print("+")
-            for (w <- 0 to width) {
+            for (w <- 0 to this.w) {
                 val currentTile = this.board.get(new Point(w, h)).get
-                if (revealed) {
-                    print(currentTile.tileType.toString)
-                } else {
-                    print(currentTile.display.toString)
-                }
+                print(currentTile.display.toString)
             }
             print("+")
         }
         println()
-        for (num <- 0 to (width + 2)) {
+        for (num <- 0 to (this.w + 2)) {
             print("+")
         }
         // Print once more to flush

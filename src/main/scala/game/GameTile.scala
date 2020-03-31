@@ -1,12 +1,8 @@
 package game
 
-class GameTile(var tileType: Character = ' ', var display: Character = '-', var revealed: Boolean = false) {
+class GameTile(var tileType: Character = ' ', var display: Character = '-', val x: Integer, val y: Integer) {
 
     def revealTile(): Unit = {
-        this.revealed = true
-    }
-
-    def changeDisplayTo(c: Character): Unit = {
-        this.display = c
+        this.display = this.tileType
     }
 }
