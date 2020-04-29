@@ -83,10 +83,10 @@ class Algorithm() {
         // Learn for the specified number of iterations
         while (count < iterations) {
             // Pause between iterations so humans can see what's going on.
-            Thread.sleep(1000)
+            // Thread.sleep(500)
 
-            // Print the board
-            this.board.printBoard()
+            // Print the board if there are 50 or fewer iterations left
+            if (iterations - count < 50) this.board.printBoard()
 
             // Make a choice and save the resulting tuple of the choice and the reward from it
             val choiceMadeTuple = makeChoice()
@@ -99,6 +99,7 @@ class Algorithm() {
             this.Q = updateQ(choiceMadeTuple._1, choiceMadeTuple._2)
 
             // If we either won or lost the game, go to the next iteration with a new board
+            // Otherwise, add the new state(s) to the Q table
             if (lostGame || wonGame) {
                 count += 1
                 val tempBoard = new GameBoard
@@ -110,7 +111,14 @@ class Algorithm() {
                 if (wonGame) gamesWon += 1
 
                 println(count)
+
+            } else {
+                this.convertBoardToState(this.board)
             }
+
+            // Ensure epsilon begins to decay. Also ensure nothing overflows if this runs for a long time.
+            this.epsilon -= this.epsilonDecayRate
+            if (this.epsilon < 0) this.epsilon = 0
         }
         (gamesWon, gamesLost, this.Q)
     }
@@ -138,7 +146,6 @@ class Algorithm() {
     def makeChoice(): (List[Character], Integer) = {
         // Sort the states by the expected reward
         val sortedStates = this.Q.sortBy(_._2)
-        println(sortedStates)
 
         // Determine whether or not we're exploring new options
         val exploring = random.nextDouble() < this.epsilon
@@ -184,8 +191,15 @@ class Algorithm() {
                             character != ' '
                         ).asInstanceOf[List[Character]]
 
+                // Initialise our Q table if it isn't already
+                if (this.Q == null) this.Q = new ListBuffer[(List[Character], Double)]
+
                 // If our new state isn't already known, add it to the Q table with a random expected reward.
-                if (!this.Q.contains((newState, _))) this.Q.addOne(newState, this.random.nextDouble())
+                var containsState = false
+                this.Q.foreach(item => {
+                    if (item._1.equals(newState)) containsState = true
+                })
+                if (!containsState) this.Q.addOne(newState, this.random.nextDouble())
             }
         }
     }
