@@ -11,12 +11,14 @@ class GameBoard {
     var lost: Boolean = false
     var w: Integer = 30
     var h: Integer = 16
+    var numberOfMines: Integer = 99
 
     def initBoard(width: Integer, height: Integer, numOfMines: Integer): Unit = {
         val generator = new Random(System.currentTimeMillis())
 
         this.w = width
         this.h = height
+        this.numberOfMines = numOfMines
 
         var mines = numOfMines
         while (mines > 0) {
@@ -70,17 +72,34 @@ class GameBoard {
         List(left, right, top, bottom, topRight, topLeft, bottomRight, bottomLeft)
     }
 
-    def handleChoice(x: Integer, y: Integer): Unit = {
+    def findState(state: List[Character]): (Integer, Integer) = {
+        for (i <- 0 to this.w) {
+            for (j <- 0 to this.h) {
+                // Get the game tile at this location
+                val gameTile = board.get(new Point(i, j)).getOrElse(null)
+                if (gameTile != null) {
+                    val surroundingTileDisplays = getSurroundingTiles(gameTile.x, gameTile.y).map(item => item.display)
+                    if (state.equals(surroundingTileDisplays)) {
+                        return (gameTile.x, gameTile.y)
+                    }
+                }
+            }
+        }
+        null
+    }
+
+    def handleChoice(x: Integer, y: Integer): Integer = {
         val selectedTile = this.board.get(new Point(x, y)).get
         if (selectedTile.tileType == 'M') {
             this.lost = true
             revealAllMines()
+            -1000
         } else {
-            cascadeClick(selectedTile, x, y)
+            cascadeClick(selectedTile, x, y, 1)
         }
     }
 
-    def cascadeClick(tile: GameTile, x: Integer, y: Integer): Unit = {
+    def cascadeClick(tile: GameTile, x: Integer, y: Integer, reward: Integer): Integer = {
         println(tile)
         if (tile.tileType == ' ' && tile.display != ' ') {
             tile.revealTile()
@@ -93,6 +112,7 @@ class GameBoard {
         } else if (tile.tileType != 'M') {
             tile.revealTile()
         }
+        reward + 1
     }
 
     def revealAllMines(): Unit = {
