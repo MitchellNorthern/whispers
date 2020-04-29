@@ -77,8 +77,10 @@ class GameBoard {
             for (j <- 0 to this.h) {
                 // Get the game tile at this location
                 val gameTile = board.get(new Point(i, j)).getOrElse(null)
-                if (gameTile != null) {
-                    val surroundingTileDisplays = getSurroundingTiles(gameTile.x, gameTile.y).map(item => item.display)
+                if (gameTile != null && gameTile.display == '-') {
+                    val surroundingTileDisplays = getSurroundingTiles(gameTile.x, gameTile.y)
+                        .map(item => if (item != null) item.display else ' ')
+                        .filter(item => item != ' ')
                     if (state.equals(surroundingTileDisplays)) {
                         return (gameTile.x, gameTile.y)
                     }
@@ -100,13 +102,12 @@ class GameBoard {
     }
 
     def cascadeClick(tile: GameTile, x: Integer, y: Integer, reward: Integer): Integer = {
-        println(tile)
         if (tile.tileType == ' ' && tile.display != ' ') {
             tile.revealTile()
             val surroundingTiles: List[GameTile] = getSurroundingTiles(x, y)
             surroundingTiles.map(surroundingTile => {
-                if (tile != null) {
-                    cascadeClick(surroundingTile, surroundingTile.x, surroundingTile.y)
+                if (surroundingTile != null) {
+                    cascadeClick(surroundingTile, surroundingTile.x, surroundingTile.y, reward)
                 }
             })
         } else if (tile.tileType != 'M') {

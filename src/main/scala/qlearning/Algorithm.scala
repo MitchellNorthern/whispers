@@ -1,10 +1,10 @@
 package qlearning
 
 import java.awt.Point
-import java.util
 
 import game.GameBoard
 
+import scala.collection.mutable.ListBuffer
 import scala.util.Random
 
 class Algorithm() {
@@ -28,7 +28,12 @@ class Algorithm() {
      * The lower the epsilon, the less exploration.
      * As the agent learns, the epsilon decreases. This is because the agent can rely on previous experience more.
      */
-    var epsilon: Double = 0.7
+    var epsilon: Double = 1
+
+    /**
+     * The rate at which epsilon decays. Decrements every time a choice is made.
+     */
+    val epsilonDecayRate = 0.05
 
     /**
      * A table containing all the state and possible actions with their weights.
@@ -38,13 +43,16 @@ class Algorithm() {
      * The possible action is to click the tile (the first double), and the value is the expected value of clicking it.
      *
      */
-    var Q: List[(List[Character], Double)] = null
+    var Q: ListBuffer[(List[Character], Double)] = null
 
     // The game board, necessary for a few calculations
     var board: GameBoard = null
 
     // The maximum possible reward for the game, based on the size of the game board and the number of mines
     var maxReward: Double = 0
+
+    // A random number generator used for various things in the algorithm
+    val random: Random = new Random()
 
     /**
      * Initialises the Q Learning algorithm.
@@ -56,17 +64,8 @@ class Algorithm() {
         this.board = gameState
         this.maxReward = (this.board.w * this.board.h - this.board.numberOfMines) + 1000
 
-        // Get the initial State values
-        val initialStates = convertBoardToState(gameState, new util.HashSet[List[Character]]())
-
-        // Set up a random number generator to initialise Q values
-        val random = new Random()
-
-        // Turn the HashSet into a Scala list for easier manipulation
-        val initialQ = initialStates.toArray.toList.asInstanceOf[List[List[Character]]]
-
-        // Set the initial states in the Q table. Values for expected rewards are random when first initialising the algorithm.
-        this.Q = initialQ.map(item => (item, random.nextDouble()))
+        // Initialise the Q table
+        convertBoardToState(this.board)
     }
 
     /**
@@ -75,28 +74,51 @@ class Algorithm() {
      * @param iterations - The number of iterations for the agent to run.
      * @return a tuple containing the number of games won, number of games lost, and the ending Q table
      */
-    def beginLearning(iterations: Integer): (Integer, Integer, List[(List[Character], Double)]) = {
+    def beginLearning(iterations: Integer): (Integer, Integer, ListBuffer[(List[Character], Double)]) = {
+        // Initialise needed variables to keep track of how many times we've played and won/lost
         var count = 0
         var gamesWon = 0
         var gamesLost = 0
+
+        // Learn for the specified number of iterations
         while (count < iterations) {
+            // Pause between iterations so humans can see what's going on.
+            Thread.sleep(1000)
+
+            // Print the board
+            this.board.printBoard()
+
+            // Make a choice and save the resulting tuple of the choice and the reward from it
             val choiceMadeTuple = makeChoice()
+
+            // Figure out if we won or lost the game based on the reward
             val lostGame = choiceMadeTuple._2 == -1000
             val wonGame = choiceMadeTuple._2 == 1000
+
+            // Update the Q value in the Q table for the action the agent picked
             this.Q = updateQ(choiceMadeTuple._1, choiceMadeTuple._2)
-            if (lostGame || wonGame) count += 1
-            if (lostGame) gamesLost += 1
-            if (wonGame) gamesWon += 1
+
+            // If we either won or lost the game, go to the next iteration with a new board
+            if (lostGame || wonGame) {
+                count += 1
+                val tempBoard = new GameBoard
+                tempBoard.initBoard(this.board.w, this.board.h, this.board.numberOfMines)
+                this.board = tempBoard
+
+                // Increment our games won or lost as necessary
+                if (lostGame) gamesLost += 1
+                if (wonGame) gamesWon += 1
+
+                println(count)
+            }
         }
         (gamesWon, gamesLost, this.Q)
     }
 
     /**
-     * Returns an updated Q table based on the Q-Learning algorithm.
-     *
-     * @return a new Q table with updated state and expected reward values
+     * Updates the Q table based on the Q-Learning algorithm.
      */
-    def updateQ(state: List[Character], reward: Integer): List[(List[Character], Double)] = {
+    def updateQ(state: List[Character], reward: Integer): ListBuffer[(List[Character], Double)] = {
         this.Q.map(item => {
             if (item._1.equals(state)) {
                 (item._1, alpha * (reward + (gamma * maxReward) - item._2))
@@ -111,18 +133,30 @@ class Algorithm() {
      * Returns the reward from the choice made. If multiple tiles are revealed
      * by a cascade, the reward is the sum of revealing all the tiles.
      *
-     * @return a tuple containing and the reward from the choice made
+     * @return a tuple containing the state acted upon and the reward from the choice made
      */
     def makeChoice(): (List[Character], Integer) = {
+        // Sort the states by the expected reward
         val sortedStates = this.Q.sortBy(_._2)
-        var choiceIndex = sortedStates.size
+        println(sortedStates)
+
+        // Determine whether or not we're exploring new options
+        val exploring = random.nextDouble() < this.epsilon
+
+        // If we're exploring, choose a random action. Otherwise, go for the max reward option.
+        var choiceIndex = if (exploring) random.nextInt(sortedStates.size) else sortedStates.size - 1
+
+        // After having chosen which state to look for (our action), find it.
+        // If the state doesn't exist on the board, if you're exploring, randomly choose a new state to find.
+        // If the state doesn't exist on the board and we're not exploring, choose the state with the next highest reward.
         var stateCoordinates: (Integer, Integer) = null
         while (stateCoordinates == null) {
             stateCoordinates = this.board.findState(sortedStates(choiceIndex)._1)
             if (stateCoordinates == null) {
-                choiceIndex -= 1
+                if (exploring) choiceIndex = random.nextInt(sortedStates.size) else choiceIndex -= 1
             }
         }
+        // Return the state we looked for (our action) and the reward so we can update the Q table
         (sortedStates(choiceIndex)._1, this.board.handleChoice(stateCoordinates._1, stateCoordinates._2))
     }
 
@@ -134,29 +168,26 @@ class Algorithm() {
      * Duplicate lists are filtered out due to the state being a Hash Set.
      *
      * @param board - The game board to convert
-     * @param existingState - The current known states
-     * @return a set containing all the states that exist or have existed in this or any game previous
      */
-    def convertBoardToState(board: GameBoard, existingState: util.HashSet[List[Character]]): util.HashSet[List[Character]] = {
-        // Create an array that contains the surrounding tiles of each tile. This is our state.
-        val statesList = existingState
-
+    def convertBoardToState(board: GameBoard): Unit = {
         // Do a double loop to get all the tiles
         for (i <- 0 to board.w) {
             for (j <- 0 to board.h) {
                 // Get the game tile at this location
                 val gameTile = board.board.get(new Point(i, j)).getOrElse(null)
-                // Set the location in the array to a piece of state by getting the
-                // tiles surrounding our current one and getting their 'display' property. Filter out unknown tiles.
-                statesList :: board.getSurroundingTiles(gameTile.x, gameTile.y)
+
+                // Turn the surrounding tiles of the current tile into a piece of state.
+                val newState = board.getSurroundingTiles(gameTile.x, gameTile.y)
                         .map(tile =>
                             if (tile != null) tile.display else ' '
                         ).filter(character =>
-                            if (character == ' ') false else true
-                        )
+                            character != ' '
+                        ).asInstanceOf[List[Character]]
+
+                // If our new state isn't already known, add it to the Q table with a random expected reward.
+                if (!this.Q.contains((newState, _))) this.Q.addOne(newState, this.random.nextDouble())
             }
         }
-        statesList
     }
 
 }
