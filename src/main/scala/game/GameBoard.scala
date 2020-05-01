@@ -78,9 +78,9 @@ class GameBoard {
                 // Get the game tile at this location
                 val gameTile = board.get(new Point(i, j)).getOrElse(null)
                 if (gameTile != null && gameTile.display == '-') {
-                    val surroundingTileDisplays = getSurroundingTiles(gameTile.x, gameTile.y)
-                        .map(item => if (item != null) item.display else ' ')
-                        .filter(item => item != ' ')
+                    val surroundingTileDisplays: List[Character] = getSurroundingTiles(gameTile.x, gameTile.y)
+                        .map(item => if (item != null) item.display else '+')
+                        .asInstanceOf[List[Character]]
                     if (state.equals(surroundingTileDisplays)) {
                         return (gameTile.x, gameTile.y)
                     }
@@ -97,23 +97,36 @@ class GameBoard {
             revealAllMines()
             -1000
         } else {
-            cascadeClick(selectedTile, x, y, 1)
+            val reward = cascadeClick(selectedTile, x, y)
+            if (checkWon()) 1000 else reward
         }
     }
 
-    def cascadeClick(tile: GameTile, x: Integer, y: Integer, reward: Integer): Integer = {
+    def checkWon(): Boolean = {
+        for (h <- (this.h - 1) to 0 by -1) {
+            for (w <- 0 to this.w) {
+                val currentTile = this.board.get(new Point(w, h)).get
+                if (currentTile.display == '-' && currentTile.tileType != 'M') {
+                    return false
+                }
+            }
+        }
+        true
+    }
+
+    def cascadeClick(tile: GameTile, x: Integer, y: Integer): Integer = {
         if (tile.tileType == ' ' && tile.display != ' ') {
             tile.revealTile()
             val surroundingTiles: List[GameTile] = getSurroundingTiles(x, y)
             surroundingTiles.map(surroundingTile => {
                 if (surroundingTile != null) {
-                    cascadeClick(surroundingTile, surroundingTile.x, surroundingTile.y, reward)
+                    cascadeClick(surroundingTile, surroundingTile.x, surroundingTile.y)
                 }
             })
         } else if (tile.tileType != 'M') {
             tile.revealTile()
         }
-        reward + 1
+        1
     }
 
     def revealAllMines(): Unit = {
@@ -125,7 +138,6 @@ class GameBoard {
                 }
             }
         }
-        printBoard()
     }
 
     def printBoard(): Unit = {
