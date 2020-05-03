@@ -21,14 +21,14 @@ class Algorithm() {
      * The lower the gamma, the more short term rewards are prioritised.
      * As the agent learns, the gamma decreases. This is because the agent is closer to the goal, so is thinking more short-term.
      */
-    var gamma: Double = 0.6
+    var gamma: Double = 0.7
 
     /**
      * The frequency at which exploration occurs.
      * The lower the epsilon, the less exploration.
      * As the agent learns, the epsilon decreases. This is because the agent can rely on previous experience more.
      */
-    var epsilon: Double = 0.8
+    var epsilon: Double = 0.5
 
     /**
      * A table containing all the state and possible actions with their weights.
@@ -54,9 +54,14 @@ class Algorithm() {
      *
      * @param gameState - The game board as it starts.
      */
-    def initAlgorithm(gameState: GameBoard): Unit = {
+    def initAlgorithm(gameState: GameBoard, alpha: Double = 0.9, gamma: Double = 0.7, epsilon: Double = 0.5): Unit = {
         // Set the game board and the max reward
         this.board = gameState
+
+        // Change the alpha, gamma, and epsilon values based on input.
+        this.alpha = alpha
+        this.gamma = gamma
+        this.epsilon = epsilon
 
         // Initialise the Q table
         convertBoardToState(this.board)
@@ -79,7 +84,7 @@ class Algorithm() {
         while (count < iterations) {
 
             // Print the board if there are 100 or fewer iterations left
-            if (iterations - count < 100) this.board.printBoard()
+            if (iterations - count <= 100) this.board.printBoard()
 
             // Make a choice and save the resulting tuple of the choice and the reward from it
             val choiceMadeTuple = makeChoice()
@@ -95,13 +100,14 @@ class Algorithm() {
             // Decrease the epsilon value to reduce the likelihood of a random choice.
             this.epsilon *= 0.9
 
-            // Decrease the alpha and gamma as the agent is learning
-            this.alpha *= 0.95
-            this.gamma *= 0.95
-
             // If we either won or lost the game, go to the next iteration with a new board
             // Otherwise, add the new state(s) to the Q table
             if (lostGame || wonGame) {
+
+                // Decrease the alpha and gamma as the agent is learning
+                this.alpha *= 0.95
+                this.gamma *= 0.95
+
                 // Increment the number of games played
                 count += 1
 
@@ -192,7 +198,7 @@ class Algorithm() {
                 val gameTile = board.board.get(new Point(i, j)).getOrElse(null)
                 if (gameTile.display == '-') {
                     // Turn the surrounding tiles of the current tile into a piece of state.
-                    val newState = board.getSurroundingTiles(gameTile.x, gameTile.y)
+                    val newState = board.getState(gameTile.x, gameTile.y)
                         .map(tile =>
                             if (tile != null) tile.display else '+'
                         )

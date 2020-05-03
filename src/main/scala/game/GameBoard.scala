@@ -32,6 +32,10 @@ class GameBoard {
         this.w = width
         this.h = height
         this.numberOfMines = numOfMines
+
+        // If too many mines are desired, leave one tile open
+        if (this.numberOfMines >= this.w * this.h) this.numberOfMines = this.w * this.h - 1
+
         this.numberOfOtherTiles = this.w * this.h - this.numberOfMines
 
         var mines = numOfMines
@@ -157,7 +161,7 @@ class GameBoard {
                 // Get the game tile at this location
                 val gameTile = board.get(new Point(i, j)).getOrElse(null)
                 if (gameTile != null && gameTile.display == '-') {
-                    val surroundingTileDisplays: List[Character] = getSurroundingTiles(gameTile.x, gameTile.y)
+                    val surroundingTileDisplays: List[Character] = getState(gameTile.x, gameTile.y)
                         .map(item => if (item != null) item.display else '+')
                         .asInstanceOf[List[Character]]
                     if (state.equals(surroundingTileDisplays)) {
