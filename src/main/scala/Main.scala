@@ -12,6 +12,6 @@ object Main {
         val algorithm: Algorithm = new Algorithm
         game.initBoard(9, 9, 10)
         algorithm.initAlgorithm(game)
-        println(algorithm.beginLearning(2500))
+        println(algorithm.beginLearning(2500)._1)
     }
 }
