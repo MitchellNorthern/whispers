@@ -119,6 +119,10 @@ class GameBoard {
      * @return A list of Game Tiles that make up that state.
      */
     def getState(x: Integer, y: Integer): List[GameTile] = {
+
+        // The below code requires a great deal of computational power to run at any reasonable speed.
+        // Thus, a 3x3 square is used instead. This can be added back in if running with more computing power.s
+        /*
         val left = this.board.get(new Point(x - 1, y)).getOrElse(null)
         val right = this.board.get(new Point(x + 1, y)).getOrElse(null)
         val top = this.board.get(new Point(x, y + 1)).getOrElse(null)
@@ -148,6 +152,9 @@ class GameBoard {
             farRight, farRightUp, farRightDown, farTop, farTopLeft, farTopRight, farBottom, farBottomLeft, farBottomRight,
             topLeftCorner, topRightCorner, bottomLeftCorner, bottomRightCorner
         )
+        */
+
+        getSurroundingTiles(x, y)
     }
 
     /**

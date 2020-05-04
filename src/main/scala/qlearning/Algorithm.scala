@@ -28,7 +28,7 @@ class Algorithm() {
      * The lower the epsilon, the less exploration.
      * As the agent learns, the epsilon decreases. This is because the agent can rely on previous experience more.
      */
-    var epsilon: Double = 0.5
+    var epsilon: Double = 0.3
 
     /**
      * A table containing all the state and possible actions with their weights.
@@ -54,7 +54,7 @@ class Algorithm() {
      *
      * @param gameState - The game board as it starts.
      */
-    def initAlgorithm(gameState: GameBoard, alpha: Double = 0.9, gamma: Double = 0.7, epsilon: Double = 0.5): Unit = {
+    def initAlgorithm(gameState: GameBoard, alpha: Double = 0.9, gamma: Double = 0.7, epsilon: Double = 0.3): Unit = {
         // Set the game board and the max reward
         this.board = gameState
 
@@ -78,6 +78,7 @@ class Algorithm() {
         var count = 0
         var gamesWon = 0
         var gamesLost = 0
+        var moves = 0
         this.maximumReward =  100 // The reward for winning a game
 
         // Learn for the specified number of iterations
@@ -89,6 +90,9 @@ class Algorithm() {
             // Make a choice and save the resulting tuple of the choice and the reward from it
             val choiceMadeTuple = makeChoice()
 
+            // Increment the number of moves made
+            moves += 1
+
             // Figure out if we won or lost the game based on the reward
             val lostGame = choiceMadeTuple._2 == -100
             val wonGame = choiceMadeTuple._2 == 100
@@ -98,15 +102,21 @@ class Algorithm() {
             this.Q = updateQ(choiceMadeTuple._1, choiceMadeTuple._2)
 
             // Decrease the epsilon value to reduce the likelihood of a random choice.
-            this.epsilon *= 0.9
+            this.epsilon -= 0.00005
 
             // If we either won or lost the game, go to the next iteration with a new board
             // Otherwise, add the new state(s) to the Q table
             if (lostGame || wonGame) {
 
+                // Print which game number this is as well as other info about it.
+                println("Game Number: " + count + ", moves made: " + moves + ", alpha: " + alpha + ", gamma: " + gamma + ", epsilon: " + epsilon)
+
                 // Decrease the alpha and gamma as the agent is learning
-                this.alpha *= 0.95
-                this.gamma *= 0.95
+                this.alpha *= 0.9998
+                this.gamma *= 0.9998
+
+                // Reset the number of moves made
+                moves = 0
 
                 // Increment the number of games played
                 count += 1
@@ -124,9 +134,6 @@ class Algorithm() {
                     gamesWon += 1
                     println("Won a game! Game: " + gamesWon)
                 }
-
-                // Print which game number this is
-                println(count)
 
             } else {
                 // If the game was neither won nor lost, convert it to new pieces of state to learn from

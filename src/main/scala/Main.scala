@@ -53,10 +53,10 @@ object Main {
             epsilon = StdIn.readDouble()
         } catch {
             case e: Exception => {
-                println("Error reading input, using default values instead (alpha = 0.9, gamma = 0.7, epsilon = 0.5)")
+                println("Error reading input, using default values instead (alpha = 0.9, gamma = 0.7, epsilon = 0.3)")
                 alpha = 0.9
                 gamma = 0.7
-                epsilon = 0.5
+                epsilon = 0.3
             }
         }
 
