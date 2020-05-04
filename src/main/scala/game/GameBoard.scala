@@ -12,12 +12,22 @@ import scala.util.Random
  */
 class GameBoard {
 
+    // The board, which is a map of points and tiles.
     var board: mutable.HashMap[Point, GameTile] = new mutable.HashMap[Point, GameTile]()
+
+    // A boolean that keeps track of if the game is won or lost
     var lost: Boolean = false
+
+    // The height and width of the board
     var w: Integer = 30
     var h: Integer = 16
+
+    // The number of mines on the board and the number of other tiles that are not mines
     var numberOfMines: Integer = 99
     var numberOfOtherTiles: Integer = 381
+
+    // A boolean that determines whether to use 'small' state (3x3) or 'big' state (5x5). Big state will make the program slower.
+    var useBigState: Boolean = false
 
     /**
      * Initialises the board with the given parametres.
@@ -26,12 +36,13 @@ class GameBoard {
      * @param height - The height of the board
      * @param numOfMines - The number of mines the board should have
      */
-    def initBoard(width: Integer, height: Integer, numOfMines: Integer): Unit = {
+    def initBoard(width: Integer, height: Integer, numOfMines: Integer, useBigState: Boolean): Unit = {
         val generator = new Random(System.currentTimeMillis())
 
         this.w = width
         this.h = height
         this.numberOfMines = numOfMines
+        this.useBigState = useBigState
 
         // If too many mines are desired, leave one tile open
         if (this.numberOfMines >= this.w * this.h) this.numberOfMines = this.w * this.h - 1
@@ -112,7 +123,7 @@ class GameBoard {
     }
 
     /**
-     * Gets the state for a given tile. This is a 5x5 square around said tile.
+     * Gets the state for a given tile. This is either a 3x3 or a 5x5 square around said tile.
      *
      * @param x - The x coordinate of the tile
      * @param y - The y coordinate of the tile
@@ -120,41 +131,40 @@ class GameBoard {
      */
     def getState(x: Integer, y: Integer): List[GameTile] = {
 
-        // The below code requires a great deal of computational power to run at any reasonable speed.
-        // Thus, a 3x3 square is used instead. This can be added back in if running with more computing power.s
-        /*
-        val left = this.board.get(new Point(x - 1, y)).getOrElse(null)
-        val right = this.board.get(new Point(x + 1, y)).getOrElse(null)
-        val top = this.board.get(new Point(x, y + 1)).getOrElse(null)
-        val bottom = this.board.get(new Point(x, y - 1)).getOrElse(null)
-        val topRight = this.board.get(new Point(x + 1, y + 1)).getOrElse(null)
-        val topLeft = this.board.get(new Point(x - 1, y + 1)).getOrElse(null)
-        val bottomRight = this.board.get(new Point(x + 1, y - 1)).getOrElse(null)
-        val bottomLeft = this.board.get(new Point(x - 1, y - 1)).getOrElse(null)
-        val farLeft = this.board.get(new Point(x - 2, y)).getOrElse(null)
-        val farLeftUp = this.board.get(new Point(x - 2, y + 1)).getOrElse(null)
-        val farLeftDown = this.board.get(new Point(x - 2, y - 1)).getOrElse(null)
-        val farRight = this.board.get(new Point(x + 2, y)).getOrElse(null)
-        val farRightUp = this.board.get(new Point(x + 2, y + 1)).getOrElse(null)
-        val farRightDown = this.board.get(new Point(x + 2, y - 1)).getOrElse(null)
-        val farTop = this.board.get(new Point(x, y + 2)).getOrElse(null)
-        val farTopLeft = this.board.get(new Point(x - 1, y + 2)).getOrElse(null)
-        val farTopRight = this.board.get(new Point(x + 1, y + 2)).getOrElse(null)
-        val farBottom = this.board.get(new Point(x, y - 2)).getOrElse(null)
-        val farBottomLeft = this.board.get(new Point(x - 1, y - 2)).getOrElse(null)
-        val farBottomRight = this.board.get(new Point(x + 1, y - 2)).getOrElse(null)
-        val topLeftCorner = this.board.get(new Point(x - 2, y + 2)).getOrElse(null)
-        val topRightCorner = this.board.get(new Point(x + 2, y + 2)).getOrElse(null)
-        val bottomLeftCorner = this.board.get(new Point(x - 2, y - 2)).getOrElse(null)
-        val bottomRightCorner = this.board.get(new Point(x + 2, y - 2)).getOrElse(null)
+        if (this.useBigState) {
+            val left = this.board.get(new Point(x - 1, y)).getOrElse(null)
+            val right = this.board.get(new Point(x + 1, y)).getOrElse(null)
+            val top = this.board.get(new Point(x, y + 1)).getOrElse(null)
+            val bottom = this.board.get(new Point(x, y - 1)).getOrElse(null)
+            val topRight = this.board.get(new Point(x + 1, y + 1)).getOrElse(null)
+            val topLeft = this.board.get(new Point(x - 1, y + 1)).getOrElse(null)
+            val bottomRight = this.board.get(new Point(x + 1, y - 1)).getOrElse(null)
+            val bottomLeft = this.board.get(new Point(x - 1, y - 1)).getOrElse(null)
+            val farLeft = this.board.get(new Point(x - 2, y)).getOrElse(null)
+            val farLeftUp = this.board.get(new Point(x - 2, y + 1)).getOrElse(null)
+            val farLeftDown = this.board.get(new Point(x - 2, y - 1)).getOrElse(null)
+            val farRight = this.board.get(new Point(x + 2, y)).getOrElse(null)
+            val farRightUp = this.board.get(new Point(x + 2, y + 1)).getOrElse(null)
+            val farRightDown = this.board.get(new Point(x + 2, y - 1)).getOrElse(null)
+            val farTop = this.board.get(new Point(x, y + 2)).getOrElse(null)
+            val farTopLeft = this.board.get(new Point(x - 1, y + 2)).getOrElse(null)
+            val farTopRight = this.board.get(new Point(x + 1, y + 2)).getOrElse(null)
+            val farBottom = this.board.get(new Point(x, y - 2)).getOrElse(null)
+            val farBottomLeft = this.board.get(new Point(x - 1, y - 2)).getOrElse(null)
+            val farBottomRight = this.board.get(new Point(x + 1, y - 2)).getOrElse(null)
+            val topLeftCorner = this.board.get(new Point(x - 2, y + 2)).getOrElse(null)
+            val topRightCorner = this.board.get(new Point(x + 2, y + 2)).getOrElse(null)
+            val bottomLeftCorner = this.board.get(new Point(x - 2, y - 2)).getOrElse(null)
+            val bottomRightCorner = this.board.get(new Point(x + 2, y - 2)).getOrElse(null)
 
-        List(left, right, top, bottom, topRight, topLeft, bottomRight, bottomLeft, farLeft, farLeftUp, farLeftDown,
-            farRight, farRightUp, farRightDown, farTop, farTopLeft, farTopRight, farBottom, farBottomLeft, farBottomRight,
-            topLeftCorner, topRightCorner, bottomLeftCorner, bottomRightCorner
-        )
-        */
+            List(left, right, top, bottom, topRight, topLeft, bottomRight, bottomLeft, farLeft, farLeftUp, farLeftDown,
+                farRight, farRightUp, farRightDown, farTop, farTopLeft, farTopRight, farBottom, farBottomLeft, farBottomRight,
+                topLeftCorner, topRightCorner, bottomLeftCorner, bottomRightCorner
+            )
+        } else {
+            getSurroundingTiles(x, y)
+        }
 
-        getSurroundingTiles(x, y)
     }
 
     /**

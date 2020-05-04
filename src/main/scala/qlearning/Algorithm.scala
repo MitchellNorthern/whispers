@@ -123,7 +123,7 @@ class Algorithm() {
 
                 // Initialise a new game board
                 val tempBoard = new GameBoard
-                tempBoard.initBoard(this.board.w, this.board.h, this.board.numberOfMines)
+                tempBoard.initBoard(this.board.w, this.board.h, this.board.numberOfMines, this.board.useBigState)
                 this.board = tempBoard
 
                 // Increment our games won or lost as necessary
